@@ -3,6 +3,7 @@ package trabook.apigateway.filter;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -21,7 +22,7 @@ import java.util.Date;
 @Slf4j
 @Component
 public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
-     // 상속하고 있는 부모 AbstractGatewayFilterFactory 에게 Config.class 를 넘겨준다.
+    // 상속하고 있는 부모 AbstractGatewayFilterFactory 에게 Config.class 를 넘겨준다.
 
     public AuthenticationFilter() {
         super(Config.class);
@@ -47,18 +48,25 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 return onError(exchange, "JWT Token is missing or empty", HttpStatus.UNAUTHORIZED);
             }
 
-            String secretString = config.getSecret();
-            SecretKey key = Keys.hmacShaKeyFor(secretString.getBytes());
-            Claims claims = Jwts.parser()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(accessToken)
-                    .getBody();
-            String userId = claims.get("userId", String.class);
-            Date issuedAt = claims.getIssuedAt();
-            Date notBefore = claims.getNotBefore();
-            Date expiration = claims.getExpiration();
+            String userId = null;
+            try {
+                String secretString = config.getSecret();
+                SecretKey key = Keys.hmacShaKeyFor(secretString.getBytes());
+                Claims claims = Jwts.parser()
+                        .setSigningKey(key)
+                        .build()
+                        .parseClaimsJws(accessToken)
+                        .getBody();
+                userId = claims.get("userId", String.class);
+                Date issuedAt = claims.getIssuedAt();
+                Date notBefore = claims.getNotBefore();
+                Date expiration = claims.getExpiration();
 
+            } catch (SignatureException e) {
+                log.error("Invalid JWT signature: {}", e.getMessage());
+            } catch (Exception e) {
+                log.error("Invalid JWT token: {}", e.getMessage());
+            }
             request.mutate().header("userId", userId).build();
             log.info("login user: {}", userId);
 
