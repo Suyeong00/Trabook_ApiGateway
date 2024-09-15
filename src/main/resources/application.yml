@@ -1,0 +1,43 @@
+server:
+  port: 8000
+
+spring:
+  application:
+    name: gateway-service
+
+  cloud:
+    gateway:
+#      default-filters: # 글로벌 필터
+#        - name: LoggingFilter
+#          args:
+#            baseMessage: Spring Cloud Gateway Logging
+#            preLogger: true
+#            postLogger: true
+      routes:
+        # 테스트 라우트
+        - id: test-service-with-auth
+          uri: http://localhost:8080
+          predicates:
+            - Path=/test/**
+          filters:
+            - name: AuthenticationFilter
+              args:
+                secret: "452E5641E6411152EC52CD37C83E1EA34FD9DFEA11F657B3FEEFB241E4"
+
+        - id: auth-service
+          uri: http://34.118.151.117:4000 # 해당 uri 로 오는 경로가 다음 predicates 로 라우팅
+          predicates:
+            - Path=/auth/**
+          filters:
+            - name: AuthenticationFilter
+              args:
+                secret: "452E5641E6411152EC52CD37C83E1EA34FD9DFEA11F657B3FEEFB241E4"
+
+        - id: plan-service
+          uri: http://34.133.241.170:8080
+          predicates:
+            - Path=/plan/**, /plans/**
+          filters:
+            - name: AuthenticationFilter
+              args:
+                secret: "452E5641E6411152EC52CD37C83E1EA34FD9DFEA11F657B3FEEFB241E4"
