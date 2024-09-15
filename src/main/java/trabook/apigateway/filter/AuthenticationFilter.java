@@ -48,7 +48,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 return onError(exchange, "JWT Token is missing or empty", HttpStatus.UNAUTHORIZED);
             }
 
-            String userId = null;
+            Integer userId = -1;
             try {
                 String secretString = config.getSecret();
                 SecretKey key = Keys.hmacShaKeyFor(secretString.getBytes());
@@ -57,7 +57,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                         .build()
                         .parseClaimsJws(accessToken)
                         .getBody();
-                userId = claims.get("userId", String.class);
+                userId = claims.get("userId", Integer.class);
                 Date issuedAt = claims.getIssuedAt();
                 Date notBefore = claims.getNotBefore();
                 Date expiration = claims.getExpiration();
@@ -67,7 +67,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
             } catch (Exception e) {
                 log.error("Invalid JWT token: {}", e.getMessage());
             }
-            request.mutate().header("userId", userId).build();
+            request.mutate().header("userId", userId.toString()).build();
             log.info("login user: {}", userId);
 
             return chain.filter(exchange);
