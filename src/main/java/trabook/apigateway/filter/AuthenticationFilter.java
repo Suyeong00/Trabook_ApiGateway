@@ -33,7 +33,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
             ServerHttpResponse response = exchange.getResponse();
-
+            request.mutate().header("userId", "-1").build(); // userId 헤더 강제 초기화
             // Authorization 헤더 없으면 검증하지 않음
             if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
                 log.info("Not authorized request");
