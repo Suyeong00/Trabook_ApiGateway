@@ -36,7 +36,7 @@ spring:
         - id: plan-service
           uri: http://34.133.241.170:8080
           predicates:
-            - Path=/plan/**, /plans/**
+            - Path=/plan/**, /plans/**, places/**, place/**, /accompanyPosts/**
           filters:
             - name: AuthenticationFilter
               args:
