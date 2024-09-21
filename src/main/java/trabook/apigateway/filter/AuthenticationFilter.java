@@ -1,6 +1,7 @@
 package trabook.apigateway.filter;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
@@ -61,11 +62,15 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 Date issuedAt = claims.getIssuedAt();
                 Date notBefore = claims.getNotBefore();
                 Date expiration = claims.getExpiration();
-
+            } catch (ExpiredJwtException e) {
+                log.error("JWT Token has expired: {}", e.getMessage());
+                return onError(exchange, "JWT Token has expired", HttpStatus.UNAUTHORIZED);
             } catch (SignatureException e) {
                 log.error("Invalid JWT signature: {}", e.getMessage());
+                return onError(exchange, "Invalid JWT signature", HttpStatus.UNAUTHORIZED);
             } catch (Exception e) {
                 log.error("Invalid JWT token: {}", e.getMessage());
+                return onError(exchange, "Invalid JWT signature", HttpStatus.UNAUTHORIZED);
             }
             request.mutate().header("userId", userId.toString()).build();
             log.info("login user: {}", userId);
