@@ -105,6 +105,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 .toEntity(Map.class) // 응답을 엔티티로 받아 헤더와 바디 모두 처리
                 .flatMap(responseEntity -> {
                     // Authorization 헤더 값 추출
+                    log.info("Verify authorization header");
                     String newAccessToken = responseEntity.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
                     // 새로운 토큰이 없을 경우 에러 처리
