@@ -67,7 +67,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 Date expiration = claims.getExpiration();
             } catch (ExpiredJwtException e) {
                 log.error("JWT Token has expired: {}", e.getMessage());
-                return renewTokenAndContinue(exchange, chain, accessToken, config);
+                return renewTokenAndContinue(exchange, chain, accessToken, userId);
             } catch (SignatureException e) {
                 log.error("Invalid JWT signature: {}", e.getMessage());
                 return onError(exchange, "Invalid JWT signature", HttpStatus.UNAUTHORIZED);
@@ -95,12 +95,12 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
         private String secret;
     }
 
-    private Mono<Void> renewTokenAndContinue(ServerWebExchange exchange, GatewayFilterChain chain, String expiredToken, Config config) {
+    private Mono<Void> renewTokenAndContinue(ServerWebExchange exchange, GatewayFilterChain chain, String expiredToken, Integer userId) {
         WebClient webClient = WebClient.builder().baseUrl("http://34.118.151.117:4060").build(); // auth-service URL
 
         return webClient.get()
                 .uri("/auth/renew-token")
-                .header(HttpHeaders.AUTHORIZATION, expiredToken) // 만료된 토큰을 Authorization 헤더에 추가
+                .header("userId", userId.toString())
                 .retrieve()
                 .toEntity(Map.class) // 응답을 엔티티로 받아 헤더와 바디 모두 처리
                 .flatMap(responseEntity -> {
