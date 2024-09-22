@@ -8,17 +8,20 @@ import io.jsonwebtoken.security.SignatureException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.Map;
 
 @Slf4j
 @Component
@@ -64,7 +67,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 Date expiration = claims.getExpiration();
             } catch (ExpiredJwtException e) {
                 log.error("JWT Token has expired: {}", e.getMessage());
-                return onError(exchange, "JWT Token has expired", HttpStatus.UNAUTHORIZED);
+                return renewTokenAndContinue(exchange, chain, accessToken, config);
             } catch (SignatureException e) {
                 log.error("Invalid JWT signature: {}", e.getMessage());
                 return onError(exchange, "Invalid JWT signature", HttpStatus.UNAUTHORIZED);
@@ -90,5 +93,42 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     @Data
     public static class Config {
         private String secret;
+    }
+
+    private Mono<Void> renewTokenAndContinue(ServerWebExchange exchange, GatewayFilterChain chain, String expiredToken, Config config) {
+        WebClient webClient = WebClient.builder().baseUrl("http://34.118.151.117:4060").build(); // auth-service URL
+
+        return webClient.get()
+                .uri("/auth/renew-token")
+                .header(HttpHeaders.AUTHORIZATION, expiredToken) // 만료된 토큰을 Authorization 헤더에 추가
+                .retrieve()
+                .toEntity(Map.class) // 응답을 엔티티로 받아 헤더와 바디 모두 처리
+                .flatMap(responseEntity -> {
+                    // Authorization 헤더 값 추출
+                    String newAccessToken = responseEntity.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+
+                    // 새로운 토큰이 없을 경우 에러 처리
+                    if (newAccessToken == null || newAccessToken.isEmpty()) {
+                        log.error("Failed to receive a valid token from /auth/renew-token.");
+                        return onError(exchange, "Failed to renew JWT token", HttpStatus.UNAUTHORIZED);
+                    }
+
+                    log.info("Renew token received: {}", newAccessToken);
+
+                    // 갱신된 토큰을 Authorization 헤더에 추가
+                    ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
+                            .header(HttpHeaders.AUTHORIZATION, newAccessToken)
+                            .build();
+
+                    // 새로운 요청으로 교체
+                    ServerWebExchange mutatedExchange = exchange.mutate().request(mutatedRequest).build();
+
+                    // 체인 필터로 이어서 처리
+                    return chain.filter(mutatedExchange);
+                })
+                .onErrorResume(e -> {
+                    log.error("Error while renewing JWT token: {}", e.getMessage());
+                    return onError(exchange, "Error renewing JWT token", HttpStatus.UNAUTHORIZED);
+                });
     }
 }
