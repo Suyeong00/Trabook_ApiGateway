@@ -62,6 +62,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
             String decodedString = new String(decodedBytes);
             JSONObject jsonObject = new JSONObject(decodedString);
             Integer tempUserId = jsonObject.getInt("userId");
+            log.info("tempUserId: {}", tempUserId);
             try {
                 String secretString = config.getSecret();
                 SecretKey key = Keys.hmacShaKeyFor(secretString.getBytes());
