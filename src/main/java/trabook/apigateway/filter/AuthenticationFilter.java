@@ -107,7 +107,7 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     }
 
     private Mono<Void> renewTokenAndContinue(ServerWebExchange exchange, GatewayFilterChain chain, Integer userId, Config config) {
-        WebClient webClient = WebClient.builder().baseUrl("http://35.216.95.239:4060").build(); // auth-service URL
+        WebClient webClient = WebClient.builder().baseUrl("http://10.178.0.4:4060").build(); // auth-service URL
         log.info("start renewTokenAndContinue");
         log.info("userId={}", userId);
         return webClient.get()
