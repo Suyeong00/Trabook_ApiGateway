@@ -14,18 +14,18 @@ spring:
 #            preLogger: true
 #            postLogger: true
 
-#      globalcors:
-#        corsConfigurations:
-#          '[/**]': # 모든 경로에 대해 CORS 설정
-#            allowedOrigins: "localhost:8080" # 허용할 Origin 추가
-#            allowedMethods:
-#              - GET
-#              - POST
-#              - PUT
-#              - DELETE
-#              - PATCH
-#            allowedHeaders: "*"
-#            allowCredentials: true # 인증 정보를 포함한 요청 허용
+      globalcors:
+        corsConfigurations:
+          '[/**]': # 모든 경로에 대해 CORS 설정
+            allowedOrigins: "localhost:8080" # 허용할 Origin 추가
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+            allowedHeaders: "*"
+            allowCredentials: true # 인증 정보를 포함한 요청 허용
       routes:
         # 테스트 라우트
         - id: test-service-with-auth
@@ -38,7 +38,7 @@ spring:
                 secret: "452E5641E6411152EC52CD37C83E1EA34FD9DFEA11F657B3FEEFB241E4"
 
         - id: auth-service
-          uri: http://10.178.0.4:4060 # 해당 uri 로 오는 경로가 다음 predicates 로 라우팅
+          uri: http://35.216.63.121:4060 # 해당 uri 로 오는 경로가 다음 predicates 로 라우팅
           predicates:
             - Path=/auth/**
           filters:
@@ -47,7 +47,7 @@ spring:
                 secret: "452E5641E6411152EC52CD37C83E1EA34FD9DFEA11F657B3FEEFB241E4"
 
         - id: plan-service
-          uri: http://10.178.0.5:8080
+          uri: http://35.216.45.204:8080
           predicates:
             - Path=/plan/**, /plans/**, /places/**, /place/**, /accompanyPosts/**
           filters:
